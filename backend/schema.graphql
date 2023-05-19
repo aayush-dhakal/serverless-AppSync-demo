@@ -1,0 +1,70 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type Subscription {
+  onCreateBook: Book @aws_subscribe(mutations: ["createBook"])
+}
+
+type Query { # Query is used to fetch the data
+  getBookById(bookId: ID!): Book! @aws_iam # in getBookById query we will be using aws IAM authentication so that guest(non logged in) user can also call the api. The rest of the query will use standard cognito user pool to register, login and verify user for api access
+  listBooks(limit: Int!, nextToken: String): BooksPage! # we are using pagination for listing the Books. Here limit is the number of result(ie books) and nextToken is for next page
+  myOrders(limit: Int!, nextToken: String): orderItemsPage! # ! means mandatory so it must return orderItemsPage here
+}
+
+type orderItemsPage {
+  orderItems: [OrderItem]
+  nextToken: String
+}
+
+type OrderItem {
+  userId: ID!
+  orderId: ID!
+  book: Book!
+  quantity: Int!
+}
+
+type BooksPage {
+  books: [Book] # [] denotes array so it contains an array of Book type
+  nextToken: String
+}
+
+type Book
+  @aws_iam # defining @aws_iam here will return every field for guest user
+  @aws_cognito_user_pools { # defining aws_cognito_user_pools here will return every field for authorized user in our user pool
+  bookId: ID!
+  # bookId: ID! @aws_iam # if I hadn't specify @aws_iam in Book attribute itself then I can give this attribute to indivisual Book field which is basically telling that if the guest user makes a request then what field to return for him
+  title: String!
+  description: String
+  imageUrl: AWSURL
+  author: String!
+  price: Float!
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
+}
+
+type Mutation { # mutation is used to update or modify the data
+  createBook(newBook: BookInput): Book! @aws_auth(cognito_groups: ["admin"]) # @aws_auth is annotation of appsync api
+  createOrder(newOrder: OrderInput): Boolean!
+}
+
+# input type is special type used in mutation to define the input payload
+input BookInput {
+  # things like id and createdAt will be added from backend
+  title: String!
+  description: String
+  imageUrl: AWSURL
+  author: String!
+  price: Float!
+}
+
+input OrderInput {
+  items: [orderItemInput]
+}
+
+input orderItemInput {
+  bookId: ID!
+  quantity: Int!
+}

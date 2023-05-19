@@ -1,0 +1,8 @@
+{
+    "version" : "2017-02-28",
+    "operation" : "GetItem",
+    "key" : {
+        ## we have to include hash and sort key(if both are defined or else only hash key) ##
+        "bookId" : $util.dynamodb.toDynamoDBJson($ctx.args.bookId)
+    }
+}

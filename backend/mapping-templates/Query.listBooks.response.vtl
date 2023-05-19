@@ -1,0 +1,5 @@
+{
+   "books": $util.toJson($context.result.items),
+   ## if the nextToken is empty or null then it will assigned to null, if any value is passed then it will be that value only  ##
+   "nextToken": $util.toJson($util.defaultIfNullOrBlank($context.result.nextToken, null)) 
+}

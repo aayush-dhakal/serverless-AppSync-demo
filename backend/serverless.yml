@@ -1,0 +1,57 @@
+# admin user credentials
+# email: admin@test.com
+# password: Admin123@
+# email: user@test.com
+# password: User123@
+
+service: serverless-appsync-backend
+frameworkVersion: "2"
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  stage: ${opt:stage, 'dev'}
+  region: "ap-southeast-2"
+
+functions:
+  hello:
+    handler: handler.hello
+
+plugins:
+  - serverless-appsync-plugin
+
+custom:
+  appSync:
+    name: youtubeAppSyncApi
+    authenticationType: AMAZON_COGNITO_USER_POOLS # this requires the user to be in cognito user pool ie  it requires users to first login then access the application
+    additionalAuthenticationProviders:
+      - authenticationType: AWS_IAM # with IAM, Cognito Identity Pool acts as an identity broker and provides temporary credentials to access AWS services and resources on behalf of authenticated users ie basically allowing guest users to make api requests
+    userPoolConfig:
+      awsRegion: ap-southeast-2
+      defaultAction: ALLOW
+      userPoolId: !Ref cognitoUserPool
+    mappingTemplatesLocation: mapping-templates # folder for templates
+    mappingTemplates:
+      - type: Query
+        field: getBookById
+        dataSource: booksTable
+      - type: Query
+        field: listBooks
+        dataSource: booksTable
+      - type: Mutation
+        field: createBook
+        dataSource: booksTable
+    dataSources:
+      - type: AMAZON_DYNAMODB
+        name: booksTable
+        config:
+          tableName: !Ref booksTable
+        # if your query required to access multiple table then use this patter
+        # config:
+        # sources:
+        #   - tableName: !Ref booksTable
+        #   - tableName: !Ref authorsTable
+
+resources:
+  Resources: ${file(resources.yml)}
